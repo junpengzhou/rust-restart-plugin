@@ -37,7 +37,7 @@ pub fn wait_for_healthy(
         health_url,
         config,
         get_health_status,
-        || logs::tail_log_lines(&config.log_file, 20),
+        || logs::tail_log_lines(config.log_file.as_path(), 20),
         std::thread::sleep,
         out,
     )

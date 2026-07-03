@@ -37,13 +37,13 @@ pub fn notify_module(module_name: &str, config: &AppConfig) -> AppResult<()> {
         return Ok(());
     }
 
-    if !config.notify_config.is_file() {
+    if !config.notify_config.as_path().is_file() {
         println!("Skipping Teams notification: notify config does not exist.");
         return Ok(());
     }
 
     println!("Sending update notification to Teams...");
-    let teams_config = load_config(&config.notify_config)?;
+    let teams_config = load_config(config.notify_config.as_path())?;
     let modules = parse_modules(module_name)?;
     send_notifications(&teams_config, &modules)?;
     println!("Teams notification sent.");

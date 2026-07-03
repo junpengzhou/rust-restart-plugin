@@ -22,7 +22,7 @@ fn loads_valid_teams_config() {
     )
     .expect("write config");
 
-    let config = load_config(&path).expect("config should load");
+    let config = load_config(path.as_path()).expect("config should load");
     assert_eq!(config.env_name, "DEMO");
     assert_eq!(config.webhooks.len(), 1);
 }
@@ -45,7 +45,7 @@ fn rejects_webhook_missing_required_fields() {
     )
     .expect("write config");
 
-    let error = load_config(&path).expect_err("missing url should fail");
+    let error = load_config(path.as_path()).expect_err("missing url should fail");
     assert!(error.to_string().contains("url"));
 }
 
