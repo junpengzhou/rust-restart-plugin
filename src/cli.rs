@@ -5,29 +5,65 @@ use std::path::PathBuf;
 #[command(name = "remote-restart-plugin")]
 #[command(about = "Restart a Docker container, wait for health, and notify Teams.")]
 pub struct Cli {
-    #[arg(value_name = "module_name")]
+    #[arg(
+        value_name = "module_name",
+        help = "Name of the module/service to restart (used to determine container name and default log path)"
+    )]
     module_name: String,
 
-    #[arg(long, default_value = "/data/boot3/logs/sahara-social/catalina.out")]
-    pub log_file: PathBuf,
+    #[arg(
+        long,
+        help = "Path to the log file to tail for startup verification.\nDefaults to /data/boot3/logs/sahara-{module_name}/catalina.out if not specified."
+    )]
+    pub log_file: Option<PathBuf>,
 
-    #[arg(long, default_value = "/prosh/salt-agent/notify/settings.json")]
+    #[arg(
+        long,
+        default_value = "/prosh/salt-agent/notify/settings.json",
+        help = "Path to the notification settings JSON file (contains Teams webhook URL, etc.).\n[default: /prosh/salt-agent/notify/settings.json]"
+    )]
     pub notify_config: PathBuf,
 
-    #[arg(long, default_value_t = 120)]
+    #[arg(
+        long,
+        default_value_t = 120,
+        help = "Maximum time in seconds to wait for the container to become healthy after restart.\n[default: 120]"
+    )]
     pub health_timeout_seconds: u64,
 
-    #[arg(long, default_value_t = 5)]
+    #[arg(
+        long,
+        default_value_t = 5,
+        help = "Interval in seconds between consecutive health check probes.\n[default: 5]"
+    )]
     pub health_interval_seconds: u64,
 
-    #[arg(long, default_value = "8080/tcp")]
+    #[arg(
+        long,
+        default_value = "8080/tcp",
+        help = "Container port/protocol to check for health (format: \"port/protocol\", e.g. \"8080/tcp\").\n[default: 8080/tcp]"
+    )]
     pub container_port: String,
 
-    #[arg(long)]
+    #[arg(
+        long,
+        help = "Skip sending Teams notification after restart completes.\n[default: false]"
+    )]
     pub skip_notify: bool,
 }
 
 impl Cli {
+    // 获取日志文件路径（自动根据模块名称填充默认值）
+    pub fn log_file(&self) -> PathBuf {
+        self.log_file.clone().unwrap_or_else(|| {
+            PathBuf::from(format!(
+                "/data/boot3/logs/sahara-{}/catalina.out",
+                self.module_name
+            ))
+        })
+    }
+
+    // 模块名称
     pub fn module_name(&self) -> &str {
         &self.module_name
     }
