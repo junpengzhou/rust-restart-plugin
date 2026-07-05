@@ -88,7 +88,7 @@ pub fn build_payload(env_name: &str, modules: &[String]) -> AppResult<Value> {
                     "body": [
                         {
                             "type": "TextBlock",
-                            "text": "SPUG update completed notification",
+                            "text": "SPUG 更新完成通知",
                             "wrap": true,
                             "weight": "bolder",
                             "size": "medium",
@@ -97,15 +97,15 @@ pub fn build_payload(env_name: &str, modules: &[String]) -> AppResult<Value> {
                         },
                         {
                             "type": "TextBlock",
-                            "text": "<at>Everyone</at>, please be informed.",
+                            "text": "所有人, 请知悉.",
                             "wrap": true
                         },
                         {
                             "type": "FactSet",
                             "facts": [
-                                {"title": "Update environment", "value": env_name},
-                                {"title": "Updated modules", "value": module_text},
-                                {"title": "Update time", "value": format!("{update_time} (Server Time)")}
+                                {"title": "更新环境", "value": env_name},
+                                {"title": "更新模块", "value": module_text},
+                                {"title": "更新时间", "value": format!("{update_time} (Server Time)")}
                             ]
                         }
                     ],
