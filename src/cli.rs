@@ -1,5 +1,6 @@
 use clap::Parser;
 use std::path::PathBuf;
+use std::env;
 
 #[derive(Debug, Parser)]
 #[command(name = "remote-restart-plugin")]
@@ -19,10 +20,9 @@ pub struct Cli {
 
     #[arg(
         long,
-        default_value = "/prosh/salt-agent/notify/settings.json",
-        help = "Path to the notification settings JSON file (contains Teams webhook URL, etc.).\n[default: /prosh/salt-agent/notify/settings.json]"
+        help = "Path to the notification settings JSON file (contains Teams webhook URL, etc.).\nDefaults to remote-restart-plugin-settings.json in the same directory as the executable if not specified."
     )]
-    pub notify_config: PathBuf,
+    pub notify_config: Option<PathBuf>,
 
     #[arg(
         long,
@@ -66,5 +66,18 @@ impl Cli {
     // 模块名称
     pub fn module_name(&self) -> &str {
         &self.module_name
+    }
+
+    // 获取通知配置文件路径（自动根据可执行文件同级目录填充默认值）
+    pub fn notify_config(&self) -> PathBuf {
+        self.notify_config.clone().unwrap_or_else(|| {
+            // 获取当前可执行文件所在目录，若获取失败则使用当前工作目录 "."
+            let exe_dir = env::current_exe()
+                .ok()
+                .and_then(|p| p.parent().map(|dir| dir.to_path_buf()))
+                .unwrap_or_else(|| PathBuf::from("."));
+            // 拼接默认的通知配置文件路径
+            exe_dir.join("remote-restart-plugin-settings.json")
+        })
     }
 }

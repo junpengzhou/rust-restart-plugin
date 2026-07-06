@@ -41,9 +41,9 @@ fn health_check_unknown_prints_warning_and_tail_command() {
     assert_eq!(*tailed_lines.borrow(), vec![300]);
     let text = String::from_utf8(output).expect("output should be utf8");
     assert!(text.contains("\u{1b}[33m[WARN] Startup health check is unknown."));
-    assert!(text.contains("[INFO] tail -n 300 /data/boot3/logs/sahara-social/catalina.out"));
+    assert!(text.contains("[INFO] tail -n 300 /data/logs/xxx/catalina.out"));
     assert!(text
-        .contains("Suggested command: tail -fn 300 /data/boot3/logs/sahara-social/catalina.out"));
+        .contains("Suggested command: tail -fn 300 /data/logs/xxx/catalina.out"));
     assert!(text.contains("line 1"));
 }
 
@@ -121,7 +121,7 @@ fn health_check_fails_immediately_on_http_404() {
     assert!(text.contains(
         "[ERROR] Health check failed: http://localhost:9904/actuator/health returned 404."
     ));
-    assert!(text.contains("[INFO] tail -n 300 /data/boot3/logs/sahara-social/catalina.out"));
+    assert!(text.contains("[INFO] tail -n 300 /data/logs/xxx/catalina.out"));
     assert!(text.contains("spring boot failed"));
 }
 
