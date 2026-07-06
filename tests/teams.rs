@@ -1,4 +1,5 @@
-use remote_restart_plugin::notify::teams::{build_payload, load_config};
+use remote_restart_plugin::config::AppConfig;
+use remote_restart_plugin::notify::teams::{build_payload, load_config, notify_module};
 use std::fs;
 
 #[test]
@@ -70,4 +71,17 @@ fn builds_adaptive_card_payload_for_modules() {
             .len(),
         0
     );
+}
+
+#[test]
+fn notify_module_does_not_fail_when_notify_config_is_invalid() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("settings.json");
+    fs::write(&path, "{ invalid json").expect("write invalid config");
+    let config = AppConfig {
+        notify_config: path,
+        ..AppConfig::default()
+    };
+
+    notify_module("frank", &config).expect("notification errors should not fail main flow");
 }

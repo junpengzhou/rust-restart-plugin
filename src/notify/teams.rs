@@ -36,6 +36,13 @@ pub fn notify_module(module_name: &str, config: &AppConfig) -> AppResult<()> {
     }
 
     println!("Sending update notification to Teams...");
+    if let Err(error) = notify_module_inner(module_name, config) {
+        println!("WARNING: Microsoft Teams notification failed: {error}");
+    }
+    Ok(())
+}
+
+fn notify_module_inner(module_name: &str, config: &AppConfig) -> AppResult<()> {
     let teams_config = load_config(config.notify_config.as_path())?;
     let modules = parse_modules(module_name)?;
     send_notifications(&teams_config, &modules)?;
