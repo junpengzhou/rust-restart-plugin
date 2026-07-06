@@ -6,6 +6,10 @@ use std::time::Duration;
 
 const YELLOW: &str = "\x1b[33m";
 const RESET: &str = "\x1b[0m";
+// 成功时候的日志行数
+const SUCCESS_LOG_LINES: usize = 20;
+// 失败时候的日志行数，显示多一点细节，因为失败时候需要更多的日志来排查问题
+const FAILURE_LOG_LINES: usize = 300;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HealthStatus {
@@ -37,7 +41,7 @@ pub fn wait_for_healthy(
         health_url,
         config,
         get_health_status,
-        || logs::tail_log_lines(config.log_file.as_path(), 20),
+        |lines| logs::tail_log_lines(config.log_file.as_path(), lines),
         std::thread::sleep,
         out,
     )
@@ -53,7 +57,7 @@ pub fn wait_for_healthy_with<H, T, S>(
 ) -> AppResult<bool>
 where
     H: Fn(&str) -> HealthStatus,
-    T: Fn() -> AppResult<String>,
+    T: Fn(usize) -> AppResult<String>,
     S: Fn(Duration),
 {
     writeln!(
@@ -69,8 +73,16 @@ where
                     out,
                     "[INFO] Health check passed: {health_url} returned 200."
                 )?;
-                print_tail(config, &tail_log, out)?;
+                print_tail(config, &tail_log, SUCCESS_LOG_LINES, out)?;
                 return Ok(true);
+            }
+            HealthStatus::Code(404) => {
+                writeln!(
+                    out,
+                    "[ERROR] Health check failed: {health_url} returned 404."
+                )?;
+                print_tail(config, &tail_log, FAILURE_LOG_LINES, out)?;
+                return Ok(false);
             }
             HealthStatus::Code(code) => {
                 writeln!(out, "[INFO] Health check returned HTTP {code}. Waiting...")?;
@@ -85,7 +97,7 @@ where
         }
     }
 
-    print_tail(config, &tail_log, out)?;
+    print_tail(config, &tail_log, FAILURE_LOG_LINES, out)?;
     writeln!(
         out,
         "{YELLOW}[WARNING]Startup health check is unknown. Please log in to the server and check the application startup status manually. Suggested command: tail -fn 300 {}{RESET}",
@@ -106,12 +118,17 @@ fn attempts_for(timeout: Duration, interval: Duration) -> u32 {
         .unwrap_or(u32::MAX)
 }
 
-fn print_tail<T>(config: &AppConfig, tail_log: &T, out: &mut dyn Write) -> AppResult<()>
+fn print_tail<T>(
+    config: &AppConfig,
+    tail_log: &T,
+    lines: usize,
+    out: &mut dyn Write,
+) -> AppResult<()>
 where
-    T: Fn() -> AppResult<String>,
+    T: Fn(usize) -> AppResult<String>,
 {
-    writeln!(out, "[INFO] tail -n 20 {}", config.log_file.display())?;
-    let output = tail_log()?;
+    writeln!(out, "[INFO] tail -n {lines} {}", config.log_file.display())?;
+    let output = tail_log(lines)?;
     if !output.trim().is_empty() {
         writeln!(out, "{}", output.trim_end())?;
     }
