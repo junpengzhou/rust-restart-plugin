@@ -1,6 +1,6 @@
 use remote_restart_plugin::command::{CommandOutput, CommandRunner};
 use remote_restart_plugin::docker::{
-    extract_host_port, first_network_name, start_container_with_sleep,
+    extract_host_port, first_network_name, print_matching_containers, start_container_with_sleep,
 };
 use remote_restart_plugin::error::AppResult;
 use serde_json::json;
@@ -103,6 +103,30 @@ fn reconnects_network_when_docker_start_reports_attach_failure() {
     );
     let text = String::from_utf8(output).expect("output utf8");
     assert!(text.contains("Network connected successfully"));
+}
+
+#[test]
+fn print_matching_containers_uses_exact_container_name() {
+    let runner = FakeRunner::new(vec![CommandOutput {
+        code: 0,
+        stdout: "\
+c2378fedf489   image   \"launch.sh\"   11 days ago   Up 10 days     social-stop-netty
+d3e1fcbc566f   image   \"launch.sh\"   11 days ago   Up 3 minutes   netty
+"
+        .to_string(),
+        stderr: String::new(),
+    }]);
+    let mut output = Vec::new();
+
+    print_matching_containers(&runner, "netty", &mut output).expect("print containers");
+
+    let text = String::from_utf8(output).expect("output utf8");
+    assert!(text.contains("netty"));
+    assert!(!text.contains("social-stop-netty"));
+    assert_eq!(
+        runner.commands.borrow().as_slice(),
+        &["docker ps -a --filter name=^/netty$"]
+    );
 }
 
 struct FakeRunner {

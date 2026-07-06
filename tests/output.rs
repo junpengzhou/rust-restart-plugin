@@ -7,7 +7,7 @@ fn info_uses_green() {
     info(&mut output_bytes, format_args!("service started")).expect("write info");
 
     let text = String::from_utf8(output_bytes).expect("output utf8");
-    assert_eq!(text, "\u{1b}[34m[INFO] service started\u{1b}[0m\n");
+    assert_eq!(text, "\u{1b}[32m[INFO] service started\u{1b}[0m\n");
 }
 
 #[test]

@@ -9,19 +9,24 @@ pub fn print_matching_containers(
     module_name: &str,
     out: &mut dyn Write,
 ) -> AppResult<()> {
-    let output = runner.run_capture("docker", &crate::command_args(&["ps", "-a"]), None)?;
+    let name_filter = format!("name=^/{module_name}$");
+    let output = runner.run_capture(
+        "docker",
+        &crate::command_args(&["ps", "-a", "--filter", &name_filter]),
+        None,
+    )?;
     if !output.success() {
         output::warn(out, format_args!("docker ps -a failed:"))?;
         writeln!(out, "{}", output.combined_output().trim())?;
         return Ok(());
     }
 
-    output::info(out, format_args!("docker ps -a | grep {module_name}"))?;
+    output::info(out, format_args!("docker ps -a --filter {name_filter}"))?;
     let mut matched = false;
     for line in output
         .stdout
         .lines()
-        .filter(|line| line.contains(module_name))
+        .filter(|line| docker_ps_line_has_exact_name(line, module_name))
     {
         writeln!(out, "{line}")?;
         matched = true;
@@ -34,6 +39,10 @@ pub fn print_matching_containers(
         )?;
     }
     Ok(())
+}
+
+fn docker_ps_line_has_exact_name(line: &str, module_name: &str) -> bool {
+    line.split_whitespace().last() == Some(module_name)
 }
 
 pub fn stop_container(
