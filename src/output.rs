@@ -2,12 +2,12 @@ use std::fmt;
 use std::io::{self, Write};
 
 const RED: &str = "\x1b[31m";
-const GREEN: &str = "\x1b[32m";
 const YELLOW: &str = "\x1b[33m";
+const BLUE: &str = "\x1b[34m";
 const RESET: &str = "\x1b[0m";
 
 pub fn info(out: &mut dyn Write, message: fmt::Arguments<'_>) -> io::Result<()> {
-    writeln!(out, "{GREEN}[INFO] {message}{RESET}")
+    writeln!(out, "{BLUE}[INFO] {message}{RESET}")
 }
 
 pub fn warn(out: &mut dyn Write, message: fmt::Arguments<'_>) -> io::Result<()> {
