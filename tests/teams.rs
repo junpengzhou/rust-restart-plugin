@@ -14,8 +14,7 @@ fn loads_valid_teams_config() {
             {
               "name": "Team3",
               "url": "https://example.test/webhook",
-              "description": "test group",
-              "members": [{"name": "all", "id": "everyone"}]
+              "description": "test group"
             }
           ]
         }"#,
@@ -37,8 +36,7 @@ fn rejects_webhook_missing_required_fields() {
           "webhooks": [
             {
               "name": "Team3",
-              "description": "missing url",
-              "members": []
+              "description": "missing url"
             }
           ]
         }"#,

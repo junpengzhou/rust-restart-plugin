@@ -22,13 +22,6 @@ pub struct WebhookConfig {
     pub url: String,
     #[serde(default)]
     pub description: String,
-    pub members: Vec<MemberConfig>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct MemberConfig {
-    pub name: String,
-    pub id: String,
 }
 
 pub fn notify_module(module_name: &str, config: &AppConfig) -> AppResult<()> {
