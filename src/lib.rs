@@ -6,6 +6,7 @@ pub mod error;
 pub mod health;
 pub mod logs;
 pub mod notify;
+pub mod output;
 
 use crate::command::SystemCommandRunner;
 use crate::config::AppConfig;

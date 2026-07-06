@@ -1,11 +1,10 @@
 use crate::config::AppConfig;
 use crate::error::AppResult;
 use crate::logs;
+use crate::output;
 use std::io::Write;
 use std::time::Duration;
 
-const YELLOW: &str = "\x1b[33m";
-const RESET: &str = "\x1b[0m";
 const SUCCESS_LOG_LINES: usize = 20;
 const FAILURE_LOG_LINES: usize = 300;
 
@@ -74,26 +73,29 @@ where
     for attempt in 0..attempts {
         match health_getter(health_url) {
             HealthStatus::Code(200) => {
-                writeln!(
+                output::info(
                     out,
-                    "[INFO] Health check passed: {health_url} returned 200."
+                    format_args!("Health check passed: {health_url} returned 200."),
                 )?;
                 print_tail(config, &tail_log, SUCCESS_LOG_LINES, out)?;
                 return Ok(StartupStatus::Started);
             }
             HealthStatus::Code(404) => {
-                writeln!(
+                output::error(
                     out,
-                    "[ERROR] Health check failed: {health_url} returned 404."
+                    format_args!("Health check failed: {health_url} returned 404."),
                 )?;
                 print_tail(config, &tail_log, FAILURE_LOG_LINES, out)?;
                 return Ok(StartupStatus::Failed);
             }
             HealthStatus::Code(code) => {
-                writeln!(out, "[INFO] Health check returned HTTP {code}. Waiting...")?;
+                output::info(
+                    out,
+                    format_args!("Health check returned HTTP {code}. Waiting..."),
+                )?;
             }
             HealthStatus::Unknown => {
-                writeln!(out, "[INFO] Health check pending...")?;
+                output::info(out, format_args!("Health check pending..."))?;
             }
         }
 
@@ -103,10 +105,12 @@ where
     }
 
     print_tail(config, &tail_log, FAILURE_LOG_LINES, out)?;
-    writeln!(
+    output::warn(
         out,
-        "{YELLOW}[WARNING]Startup health check is unknown. Please log in to the server and check the application startup status manually. Suggested command: tail -fn 300 {}{RESET}",
-        config.log_file.display()
+        format_args!(
+            "Startup health check is unknown. Please log in to the server and check the application startup status manually. Suggested command: tail -fn 300 {}",
+            config.log_file.display()
+        ),
     )?;
     Ok(StartupStatus::Unknown)
 }
@@ -132,7 +136,10 @@ fn print_tail<T>(
 where
     T: Fn(usize) -> AppResult<String>,
 {
-    writeln!(out, "[INFO] tail -n {lines} {}", config.log_file.display())?;
+    output::info(
+        out,
+        format_args!("tail -n {lines} {}", config.log_file.display()),
+    )?;
     let output = tail_log(lines)?;
     if !output.trim().is_empty() {
         writeln!(out, "{}", output.trim_end())?;

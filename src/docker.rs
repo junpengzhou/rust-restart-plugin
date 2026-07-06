@@ -1,5 +1,6 @@
 use crate::command::CommandRunner;
 use crate::error::{AppError, AppResult};
+use crate::output;
 use serde_json::Value;
 use std::io::Write;
 
@@ -10,12 +11,12 @@ pub fn print_matching_containers(
 ) -> AppResult<()> {
     let output = runner.run_capture("docker", &crate::command_args(&["ps", "-a"]), None)?;
     if !output.success() {
-        writeln!(out, "WARNING: docker ps -a failed:")?;
+        output::warn(out, format_args!("docker ps -a failed:"))?;
         writeln!(out, "{}", output.combined_output().trim())?;
         return Ok(());
     }
 
-    writeln!(out, "[INFO] docker ps -a | grep {module_name}")?;
+    output::info(out, format_args!("docker ps -a | grep {module_name}"))?;
     let mut matched = false;
     for line in output
         .stdout
@@ -27,7 +28,10 @@ pub fn print_matching_containers(
     }
 
     if !matched {
-        writeln!(out, "[INFO] No docker ps -a rows matched: {module_name}")?;
+        output::info(
+            out,
+            format_args!("No docker ps -a rows matched: {module_name}"),
+        )?;
     }
     Ok(())
 }
@@ -44,9 +48,11 @@ pub fn stop_container(
         None,
     )?;
     if !output.success() {
-        writeln!(
+        output::warn(
             out,
-            "WARNING: container {module_name} may not be running or stop failed. Continuing..."
+            format_args!(
+                "container {module_name} may not be running or stop failed. Continuing..."
+            ),
         )?;
     }
     Ok(())
@@ -82,7 +88,10 @@ where
 
     let combined = output.combined_output();
     if !combined.contains("attaching to network failed") {
-        writeln!(out, "ERROR: failed to start container {module_name}.")?;
+        output::error(
+            out,
+            format_args!("failed to start container {module_name}."),
+        )?;
         writeln!(out, "Error output: {}", combined.trim())?;
         return Ok(false);
     }
@@ -107,9 +116,9 @@ where
     sleep(std::time::Duration::from_secs(3));
 
     let Some(network_name) = first_network_name(&inspect(runner, module_name)?) else {
-        writeln!(
+        output::error(
             out,
-            "ERROR: unable to find network name for container {module_name}."
+            format_args!("unable to find network name for container {module_name}."),
         )?;
         writeln!(out, "Original error: {}", original_error.trim())?;
         return Ok(false);
@@ -133,9 +142,9 @@ where
         None,
     )?;
     if !connect_output.success() {
-        writeln!(
+        output::error(
             out,
-            "ERROR: unable to connect container {module_name} to network {network_name}."
+            format_args!("unable to connect container {module_name} to network {network_name}."),
         )?;
         writeln!(out, "Original error: {}", original_error.trim())?;
         return Ok(false);
@@ -151,9 +160,9 @@ where
         None,
     )?;
     if !retry_output.success() {
-        writeln!(
+        output::error(
             out,
-            "ERROR: container {module_name} failed to start after network reconnect."
+            format_args!("container {module_name} failed to start after network reconnect."),
         )?;
         return Ok(false);
     }

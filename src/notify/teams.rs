@@ -1,5 +1,6 @@
 use crate::config::AppConfig;
 use crate::error::{AppError, AppResult};
+use crate::output;
 use chrono::Local;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -26,18 +27,22 @@ pub struct WebhookConfig {
 
 pub fn notify_module(module_name: &str, config: &AppConfig) -> AppResult<()> {
     if config.skip_notify {
-        println!("Skipping Teams notification: disabled by --skip-notify.");
+        output::print_info(format_args!(
+            "Skipping Teams notification: disabled by --skip-notify."
+        ));
         return Ok(());
     }
 
     if !config.notify_config.as_path().is_file() {
-        println!("Skipping Teams notification: notify config does not exist.");
+        output::print_info(format_args!(
+            "Skipping Teams notification: notify config does not exist."
+        ));
         return Ok(());
     }
 
-    println!("Sending update notification to Teams...");
+    output::print_info(format_args!("Sending update notification to Teams..."));
     if let Err(error) = notify_module_inner(module_name, config) {
-        println!("WARNING: Microsoft Teams notification failed: {error}");
+        output::print_warn(format_args!("Microsoft Teams notification failed: {error}"));
     }
     Ok(())
 }
@@ -46,7 +51,7 @@ fn notify_module_inner(module_name: &str, config: &AppConfig) -> AppResult<()> {
     let teams_config = load_config(config.notify_config.as_path())?;
     let modules = parse_modules(module_name)?;
     send_notifications(&teams_config, &modules)?;
-    println!("Teams notification sent.");
+    output::print_info(format_args!("Teams notification sent."));
     Ok(())
 }
 
@@ -125,14 +130,14 @@ pub fn send_notifications(config: &TeamsConfig, modules: &[String]) -> AppResult
         .build()?;
 
     for webhook in &config.webhooks {
-        println!(
+        output::print_info(format_args!(
             "Processing webhook: {}, description: {}, url: {}",
             webhook.name, webhook.description, webhook.url
-        );
+        ));
         match client.post(&webhook.url).json(&payload).send() {
             Ok(_) => {}
             Err(error) => {
-                println!("WARNING: Microsoft Teams notification failed: {error}");
+                output::print_warn(format_args!("Microsoft Teams notification failed: {error}"));
             }
         }
     }

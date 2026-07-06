@@ -40,7 +40,7 @@ fn health_check_unknown_prints_warning_and_tail_command() {
     assert_eq!(tail_calls.get(), 1);
     assert_eq!(*tailed_lines.borrow(), vec![300]);
     let text = String::from_utf8(output).expect("output should be utf8");
-    assert!(text.contains("\u{1b}[33m[WARNING]Startup health check is unknown."));
+    assert!(text.contains("\u{1b}[33m[WARN] Startup health check is unknown."));
     assert!(text.contains("[INFO] tail -n 300 /data/boot3/logs/sahara-social/catalina.out"));
     assert!(text
         .contains("Suggested command: tail -fn 300 /data/boot3/logs/sahara-social/catalina.out"));
