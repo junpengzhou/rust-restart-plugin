@@ -19,10 +19,7 @@ pub struct TeamsConfig {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct WebhookConfig {
-    pub name: String,
     pub url: String,
-    #[serde(default)]
-    pub description: String,
 }
 
 pub fn notify_module(module_name: &str, config: &AppConfig) -> AppResult<()> {
@@ -34,13 +31,12 @@ pub fn notify_module(module_name: &str, config: &AppConfig) -> AppResult<()> {
     }
 
     if !config.notify_config.as_path().is_file() {
-        output::print_info(format_args!(
+        output::print_warn(format_args!(
             "Skipping Teams notification: notify config does not exist."
         ));
         return Ok(());
     }
 
-    output::print_info(format_args!("Sending update notification to Teams..."));
     if let Err(error) = notify_module_inner(module_name, config) {
         output::print_warn(format_args!("Microsoft Teams notification failed: {error}"));
     }
@@ -51,7 +47,6 @@ fn notify_module_inner(module_name: &str, config: &AppConfig) -> AppResult<()> {
     let teams_config = load_config(config.notify_config.as_path())?;
     let modules = parse_modules(module_name)?;
     send_notifications(&teams_config, &modules)?;
-    output::print_info(format_args!("Teams notification sent."));
     Ok(())
 }
 
@@ -130,14 +125,18 @@ pub fn send_notifications(config: &TeamsConfig, modules: &[String]) -> AppResult
         .build()?;
 
     for webhook in &config.webhooks {
-        output::print_info(format_args!(
-            "Processing webhook: {}, description: {}, url: {}",
-            webhook.name, webhook.description, webhook.url
-        ));
         match client.post(&webhook.url).json(&payload).send() {
-            Ok(_) => {}
+            Ok(_) => {
+                output::print_info(format_args!(
+                    "Teams notification sent successfully to webhook: {}",
+                    webhook.url
+                ));
+            }
             Err(error) => {
-                output::print_warn(format_args!("Microsoft Teams notification failed: {error}"));
+                output::print_warn(format_args!(
+                    "Microsoft Teams notification failed, webhook: {}, error: {error}",
+                    webhook.url
+                ));
             }
         }
     }
@@ -146,11 +145,6 @@ pub fn send_notifications(config: &TeamsConfig, modules: &[String]) -> AppResult
 
 fn validate_config(config: &TeamsConfig) -> AppResult<()> {
     for webhook in &config.webhooks {
-        if webhook.name.trim().is_empty() {
-            return Err(AppError::InvalidConfig(
-                "webhook is missing required field `name`".to_string(),
-            ));
-        }
         if webhook.url.trim().is_empty() {
             return Err(AppError::InvalidConfig(
                 "webhook is missing required field `url`".to_string(),
