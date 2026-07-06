@@ -1,20 +1,20 @@
-use remote_restart_plugin::output;
+use remote_restart_plugin::output::{error, info, warn};
 
 #[test]
-fn info_uses_default_color() {
+fn info_uses_green() {
     let mut output_bytes = Vec::new();
 
-    output::info(&mut output_bytes, format_args!("service started")).expect("write info");
+    info(&mut output_bytes, format_args!("service started")).expect("write info");
 
     let text = String::from_utf8(output_bytes).expect("output utf8");
-    assert_eq!(text, "[INFO] service started\n");
+    assert_eq!(text, "\u{1b}[32m[INFO] service started\u{1b}[0m\n");
 }
 
 #[test]
 fn warn_uses_yellow() {
     let mut output_bytes = Vec::new();
 
-    output::warn(&mut output_bytes, format_args!("service pending")).expect("write warn");
+    warn(&mut output_bytes, format_args!("service pending")).expect("write warn");
 
     let text = String::from_utf8(output_bytes).expect("output utf8");
     assert_eq!(text, "\u{1b}[33m[WARN] service pending\u{1b}[0m\n");
@@ -24,7 +24,7 @@ fn warn_uses_yellow() {
 fn error_uses_red() {
     let mut output_bytes = Vec::new();
 
-    output::error(&mut output_bytes, format_args!("service failed")).expect("write error");
+    error(&mut output_bytes, format_args!("service failed")).expect("write error");
 
     let text = String::from_utf8(output_bytes).expect("output utf8");
     assert_eq!(text, "\u{1b}[31m[ERROR] service failed\u{1b}[0m\n");
