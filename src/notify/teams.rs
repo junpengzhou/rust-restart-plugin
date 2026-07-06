@@ -2,7 +2,7 @@ use crate::config::AppConfig;
 use crate::error::{AppError, AppResult};
 use chrono::Local;
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::fs;
 use std::path::Path;
 

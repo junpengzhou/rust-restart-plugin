@@ -57,18 +57,14 @@ fn builds_adaptive_card_payload_for_modules() {
     assert_eq!(payload["type"], "message");
     let body = &payload["attachments"][0]["content"]["body"];
     assert_eq!(body[0]["type"], "TextBlock");
-    assert!(
-        body[2]["facts"][0]["value"]
-            .as_str()
-            .unwrap()
-            .contains("DEMO")
-    );
-    assert!(
-        body[2]["facts"][1]["value"]
-            .as_str()
-            .unwrap()
-            .contains("frank, pm")
-    );
+    assert!(body[2]["facts"][0]["value"]
+        .as_str()
+        .unwrap()
+        .contains("DEMO"));
+    assert!(body[2]["facts"][1]["value"]
+        .as_str()
+        .unwrap()
+        .contains("frank, pm"));
     assert_eq!(
         payload["attachments"][0]["content"]["msteams"]["entities"]
             .as_array()
