@@ -10,6 +10,7 @@ pub mod notify;
 use crate::command::SystemCommandRunner;
 use crate::config::AppConfig;
 use crate::error::AppResult;
+use crate::health::StartupStatus;
 use std::io;
 
 pub fn run(module_name: &str, config: AppConfig) -> AppResult<()> {
@@ -35,9 +36,10 @@ pub fn run(module_name: &str, config: AppConfig) -> AppResult<()> {
         })?;
 
     let health_url = format!("http://localhost:{host_port}/actuator/health");
-    let healthy = health::wait_for_healthy(&health_url, &config, &mut stdout)?;
-    if !healthy {
-        return Err(error::AppError::HealthCheckUnknown);
+    match health::wait_for_healthy(&health_url, &config, &mut stdout)? {
+        StartupStatus::Started => {}
+        StartupStatus::Failed => return Err(error::AppError::StartupFailed),
+        StartupStatus::Unknown => return Err(error::AppError::HealthCheckUnknown),
     }
 
     notify::teams::notify_module(module_name, &config)?;

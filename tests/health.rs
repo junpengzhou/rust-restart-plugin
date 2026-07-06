@@ -1,4 +1,5 @@
 use remote_restart_plugin::config::AppConfig;
+use remote_restart_plugin::error::AppError;
 use remote_restart_plugin::health::{wait_for_healthy_with, HealthStatus};
 use std::cell::{Cell, RefCell};
 use std::time::Duration;
@@ -15,7 +16,7 @@ fn health_check_unknown_prints_warning_and_tail_command() {
     let tailed_lines = RefCell::new(Vec::new());
     let mut output = Vec::new();
 
-    let healthy = wait_for_healthy_with(
+    let status = wait_for_healthy_with(
         "http://localhost:9904/actuator/health",
         &config,
         |_| {
@@ -32,7 +33,10 @@ fn health_check_unknown_prints_warning_and_tail_command() {
     )
     .expect("health wait should not return IO errors");
 
-    assert!(!healthy);
+    assert_eq!(
+        status,
+        remote_restart_plugin::health::StartupStatus::Unknown
+    );
     assert_eq!(tail_calls.get(), 1);
     assert_eq!(*tailed_lines.borrow(), vec![300]);
     let text = String::from_utf8(output).expect("output should be utf8");
@@ -54,7 +58,7 @@ fn health_check_succeeds_on_http_200() {
     let tailed_lines = RefCell::new(Vec::new());
     let mut output = Vec::new();
 
-    let healthy = wait_for_healthy_with(
+    let status = wait_for_healthy_with(
         "http://localhost:9904/actuator/health",
         &config,
         |_| HealthStatus::Code(200),
@@ -68,7 +72,10 @@ fn health_check_succeeds_on_http_200() {
     )
     .expect("health wait should not return IO errors");
 
-    assert!(healthy);
+    assert_eq!(
+        status,
+        remote_restart_plugin::health::StartupStatus::Started
+    );
     assert_eq!(tail_calls.get(), 1);
     assert_eq!(*tailed_lines.borrow(), vec![20]);
     let text = String::from_utf8(output).expect("output should be utf8");
@@ -88,7 +95,7 @@ fn health_check_fails_immediately_on_http_404() {
     let tailed_lines = RefCell::new(Vec::new());
     let mut output = Vec::new();
 
-    let healthy = wait_for_healthy_with(
+    let status = wait_for_healthy_with(
         "http://localhost:9904/actuator/health",
         &config,
         |_| {
@@ -106,7 +113,7 @@ fn health_check_fails_immediately_on_http_404() {
     )
     .expect("health wait should not return IO errors");
 
-    assert!(!healthy);
+    assert_eq!(status, remote_restart_plugin::health::StartupStatus::Failed);
     assert_eq!(calls.get(), 1);
     assert_eq!(sleeps.get(), 0);
     assert_eq!(*tailed_lines.borrow(), vec![300]);
@@ -116,4 +123,11 @@ fn health_check_fails_immediately_on_http_404() {
     ));
     assert!(text.contains("[INFO] tail -n 300 /data/boot3/logs/sahara-social/catalina.out"));
     assert!(text.contains("spring boot failed"));
+}
+
+#[test]
+fn startup_failed_error_message_is_explicit() {
+    let error = AppError::StartupFailed;
+
+    assert_eq!(error.to_string(), "application startup failed");
 }

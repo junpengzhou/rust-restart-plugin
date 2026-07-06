@@ -44,6 +44,9 @@ pub enum AppError {
     #[error("startup health check is unknown")]
     HealthCheckUnknown,
 
+    #[error("application startup failed")]
+    StartupFailed,
+
     #[error("notification configuration is invalid: {0}")]
     InvalidConfig(String),
 

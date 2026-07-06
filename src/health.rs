@@ -6,14 +6,19 @@ use std::time::Duration;
 
 const YELLOW: &str = "\x1b[33m";
 const RESET: &str = "\x1b[0m";
-// 成功时候的日志行数
 const SUCCESS_LOG_LINES: usize = 20;
-// 失败时候的日志行数，显示多一点细节，因为失败时候需要更多的日志来排查问题
 const FAILURE_LOG_LINES: usize = 300;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HealthStatus {
     Code(u16),
+    Unknown,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StartupStatus {
+    Started,
+    Failed,
     Unknown,
 }
 
@@ -36,7 +41,7 @@ pub fn wait_for_healthy(
     health_url: &str,
     config: &AppConfig,
     out: &mut dyn Write,
-) -> AppResult<bool> {
+) -> AppResult<StartupStatus> {
     wait_for_healthy_with(
         health_url,
         config,
@@ -54,7 +59,7 @@ pub fn wait_for_healthy_with<H, T, S>(
     tail_log: T,
     sleep: S,
     out: &mut dyn Write,
-) -> AppResult<bool>
+) -> AppResult<StartupStatus>
 where
     H: Fn(&str) -> HealthStatus,
     T: Fn(usize) -> AppResult<String>,
@@ -74,7 +79,7 @@ where
                     "[INFO] Health check passed: {health_url} returned 200."
                 )?;
                 print_tail(config, &tail_log, SUCCESS_LOG_LINES, out)?;
-                return Ok(true);
+                return Ok(StartupStatus::Started);
             }
             HealthStatus::Code(404) => {
                 writeln!(
@@ -82,7 +87,7 @@ where
                     "[ERROR] Health check failed: {health_url} returned 404."
                 )?;
                 print_tail(config, &tail_log, FAILURE_LOG_LINES, out)?;
-                return Ok(false);
+                return Ok(StartupStatus::Failed);
             }
             HealthStatus::Code(code) => {
                 writeln!(out, "[INFO] Health check returned HTTP {code}. Waiting...")?;
@@ -103,7 +108,7 @@ where
         "{YELLOW}[WARNING]Startup health check is unknown. Please log in to the server and check the application startup status manually. Suggested command: tail -fn 300 {}{RESET}",
         config.log_file.display()
     )?;
-    Ok(false)
+    Ok(StartupStatus::Unknown)
 }
 
 fn attempts_for(timeout: Duration, interval: Duration) -> u32 {
