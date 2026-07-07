@@ -1,6 +1,6 @@
 use clap::Parser;
-use std::path::PathBuf;
 use std::env;
+use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
 #[command(name = "remote-restart-plugin")]
@@ -44,6 +44,12 @@ pub struct Cli {
         help = "Container port/protocol to check for health (format: \"port/protocol\", e.g. \"8080/tcp\").\n[default: 8080/tcp]"
     )]
     pub container_port: String,
+
+    #[arg(
+        long,
+        help = "Explicit health check URL. When set to a non-empty value, Docker inspect and port mapping lookup are skipped."
+    )]
+    pub health_url: Option<String>,
 
     #[arg(
         long,
