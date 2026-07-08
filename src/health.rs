@@ -80,7 +80,7 @@ where
                 print_tail(config, &tail_log, SUCCESS_LOG_LINES, out)?;
                 return Ok(StartupStatus::Started);
             }
-            HealthStatus::Code(404) => {
+            HealthStatus::Code(404 | 503) => {
                 output::error(
                     out,
                     format_args!("Health check failed: {health_url} returned an explicit error."),
