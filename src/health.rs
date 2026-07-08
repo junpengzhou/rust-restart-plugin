@@ -75,7 +75,7 @@ where
             HealthStatus::Code(200) => {
                 output::info(
                     out,
-                    format_args!("Health check passed: {health_url} returned 200."),
+                    format_args!("Health check passed: {health_url} returned ok."),
                 )?;
                 print_tail(config, &tail_log, SUCCESS_LOG_LINES, out)?;
                 return Ok(StartupStatus::Started);
@@ -83,7 +83,7 @@ where
             HealthStatus::Code(404) => {
                 output::error(
                     out,
-                    format_args!("Health check failed: {health_url} returned 404."),
+                    format_args!("Health check failed: {health_url} returned an explicit error."),
                 )?;
                 print_tail(config, &tail_log, FAILURE_LOG_LINES, out)?;
                 return Ok(StartupStatus::Failed);

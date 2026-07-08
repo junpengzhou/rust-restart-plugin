@@ -118,7 +118,7 @@ fn health_check_fails_immediately_on_http_404() {
     assert_eq!(*tailed_lines.borrow(), vec![300]);
     let text = String::from_utf8(output).expect("output should be utf8");
     assert!(text.contains(
-        "[ERROR] Health check failed: http://localhost:9904/actuator/health returned 404."
+        "[ERROR] Health check failed: http://localhost:9904/actuator/health returned an explicit error."
     ));
     assert!(text.contains("[INFO] tail -n 300 /data/logs/xxx/catalina.out"));
     assert!(text.contains("spring boot failed"));
