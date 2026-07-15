@@ -5,7 +5,11 @@ use chrono::Local;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::fs;
+use std::net::{IpAddr, Ipv4Addr, UdpSocket};
 use std::path::Path;
+
+const ROUTE_PROBE_ADDRESS: &str = "192.0.2.1:80";
+const UNKNOWN_HOST_INFO: &str = "未知";
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct TeamsConfig {
@@ -65,6 +69,24 @@ pub fn load_config(path: &Path) -> AppResult<TeamsConfig> {
     Ok(config)
 }
 
+fn current_host_name() -> String {
+    hostname::get()
+        .ok()
+        .map(|name| name.to_string_lossy().trim().to_owned())
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| UNKNOWN_HOST_INFO.to_owned())
+}
+
+fn default_route_ipv4() -> Option<Ipv4Addr> {
+    let socket = UdpSocket::bind("0.0.0.0:0").ok()?;
+    socket.connect(ROUTE_PROBE_ADDRESS).ok()?;
+
+    match socket.local_addr().ok()?.ip() {
+        IpAddr::V4(address) if !address.is_unspecified() && !address.is_loopback() => Some(address),
+        _ => None,
+    }
+}
+
 pub fn build_payload(env_name: &str, modules: &[String]) -> AppResult<Value> {
     if modules.is_empty() {
         return Err(AppError::InvalidConfig(
@@ -74,6 +96,10 @@ pub fn build_payload(env_name: &str, modules: &[String]) -> AppResult<Value> {
 
     let update_time = Local::now().format("%Y-%m-%d %H:%M:%S%z").to_string();
     let module_text = modules.join(", ");
+    let host_name = current_host_name();
+    let host_address = default_route_ipv4()
+        .map(|address| address.to_string())
+        .unwrap_or_else(|| UNKNOWN_HOST_INFO.to_owned());
 
     Ok(json!({
         "type": "message",
@@ -105,7 +131,9 @@ pub fn build_payload(env_name: &str, modules: &[String]) -> AppResult<Value> {
                             "facts": [
                                 {"title": "更新环境", "value": env_name},
                                 {"title": "更新模块", "value": module_text},
-                                {"title": "更新时间", "value": format!("{update_time} (Server Time)")}
+                                {"title": "更新时间", "value": format!("{update_time} (Server Time)")},
+                                {"title": "主机名称", "value": host_name},
+                                {"title": "主机地址", "value": host_address}
                             ]
                         }
                     ],
