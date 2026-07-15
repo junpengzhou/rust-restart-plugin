@@ -9,6 +9,8 @@ use std::net::{IpAddr, Ipv4Addr, UdpSocket};
 use std::path::Path;
 
 const ROUTE_PROBE_ADDRESS: &str = "192.0.2.1:80";
+const SEND_ATTEMPTS: usize = 2;
+const SEND_RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
 const UNKNOWN_HOST_INFO: &str = "未知";
 
 #[derive(Debug, Clone, Deserialize)]
@@ -153,18 +155,25 @@ pub fn send_notifications(config: &TeamsConfig, modules: &[String]) -> AppResult
         .build()?;
 
     for webhook in &config.webhooks {
-        match client.post(&webhook.url).json(&payload).send() {
-            Ok(_) => {
-                output::print_info(format_args!(
-                    "Teams notification sent successfully to webhook: {}",
-                    webhook.url
-                ));
-            }
-            Err(error) => {
-                output::print_warn(format_args!(
-                    "Microsoft Teams notification failed, webhook: {}, error: {error}",
-                    webhook.url
-                ));
+        for attempt in 1..=SEND_ATTEMPTS {
+            match client.post(&webhook.url).json(&payload).send() {
+                Ok(_) => {
+                    output::print_info(format_args!(
+                        "Teams notification sent successfully to webhook: {}",
+                        webhook.url
+                    ));
+                    break;
+                }
+                Err(error) if error.is_request() && attempt < SEND_ATTEMPTS => {
+                    std::thread::sleep(SEND_RETRY_DELAY);
+                }
+                Err(error) => {
+                    output::print_warn(format_args!(
+                        "Microsoft Teams notification failed, webhook: {}, error: {error}",
+                        webhook.url
+                    ));
+                    break;
+                }
             }
         }
     }
